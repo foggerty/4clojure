@@ -1,0 +1,298 @@
+#+PROPERTY: header-args :results silent
+
+* Setup
+
+That...........   Was painful as fuck.
+
+Clojure & Cider are not designed for a "simple" REPL experience where
+you can just type ~(doc func-name)~ and get a result that's /not/ a
+terrifyingly huge stack-trace.
+
+Pro tip: keep your org-mode config as /minimal/ as possible, and disable
+it when trying to figure out what's going wrong.  I owe Cider an
+apology for all of the swearing it received :-)
+
+* General Clojure Notes
+** Namespaces and imports
+
+In :require, either use :all to bring in all functions, or specify
+individual ones (prefered) using the :refer keyword.
+
+#+BEGIN_SRC clojure
+(ns foggerty.4clojure
+  (:require [clojure.repl
+             :refer [doc]
+             :as repl]))
+#+END_SRC
+
+** True / false
+~nil~ and ~false~ are 'falsey'.  Everything else is 'true'.
+
+** Comparisons
+~=~ is strict when it comes to numbers. Use ~==~ for more loose tests:
+
+#+BEGIN_SRC clojure
+(= 1 1.0)                               ; false
+(== 1 1.0)                              ; true
+#+END_SRC
+
+Note that ~=~ will recurse into data structures, and works against
+~ISequence~, so the type of container (list, vector etc) is ignored:
+
+#+BEGIN_SRC clojure
+(= {:a 1, :b 2, :c [1 2 3]}
+   {:a 1, :b 2, :c [1 2 3]})            ;true
+
+(= [1 2 3] '(1 2 3))                    ;true
+#+END_SRC
+
+** Forward declarations 
+#+BEGIN_SRC clojure
+(declare function-that-will-be-defined-later)
+#+END_SRC
+
+** Threading macros
+*** ->
+This takes an intial value and inserts it as the second item in the
+first form.  It then takes the result, and inserts it as the second
+item in the second form, and repeats:
+
+#+BEGIN_SRC clojure 
+(-> [2 5 4 1 3 6]
+    (reverse)                           ; [6 3 1 4 5 2]
+    (rest)                              ; [3 1 4 5 2]
+    (sort)                              ; [1 2 3 4 5]
+    (last))                             ; 5
+#+END_SRC
+
+Without it, would have to write the above in the usual inside-out
+fashion:
+
+#+BEGIN_SRC clojure
+(last
+ (sort
+  (rest
+   (reverse [2 5 4 1 3 6]))))           ; 5
+#+END_SRC
+
+Remember that is inserts as the /second/ item, so the following works
+too:
+
+#+BEGIN_SRC clojure
+(-> 5
+    (+ 2 2)
+    (* 2 3))                            ; 54
+
+(macroexpand-all '(-> 5 (+ 2 2) (* 2 3))) ; (* (+ 5 2 2) 2 3)
+#+END_SRC
+
+Finally, for readability, braces can be omitted for functions that
+take a single argument:
+
+#+BEGIN_SRC clojure
+(-> [5 3 1 4 2]
+    sort
+    reverse                             
+    first)                              ; 5
+#+END_SRC
+
+*** ->>
+Whereas ~->~ inserts the value/form 'first' (i.e. as the second item in
+a form, it's the /first argument/), ~->>~ places the value/form at the end
+of the form.  Using a sum-of-squares example (because there are not
+enough of those used in functional programming tutorials) you get
+something like the following:
+
+#+BEGIN_SRC clojure
+(->> (range 10)
+     (filter odd?)
+     (map #(* % %))
+     (reduce +))                        ; 165
+#+END_SRC
+
+#+RESULTS:
+
+*** as->
+For mixed cases, use ~as->~.  The first argument is the value to be threaded, the second is a place-holder token, representing the initial value and subsequent forms:
+
+#+BEGIN_SRC clojure
+(as-> [:foo :bar] v
+  (map name v)
+  (first v)
+  (.substring v 1))                     ; "oo"
+#+END_SRC
+ 
+I claim no responsibility for that heavily contrived example.
+
+*** Usage
+As a rule, most of the core sequence functions like ~map~, ~reduce~, ~into~
+etc, take a sequence as their final argument.  So for them, use ~->>~.
+Core functions that operate on data structures, usually take it as
+their first argument, so use ~->~
+
+For everything else, as-> will probably get the job done.
+** for vs loop/recur
+First up, ~recur~ works with either the ~loop~ form, or the function that it's defined in.
+
+So the following two definitions do the same thing:
+#+BEGIN_SRC clojure
+(defn factorial1 [num]
+  (loop [n num fact 1M]   ; force bigint
+    (if (= 1 n)
+      fact
+      (recur (dec n) (* n fact)))))
+
+(defn factorial2
+  ([num] (factorial2 num 1M)) 
+  ([n fact]
+   (if (= 1 n)
+     fact
+     (recur (dec n) (*' n fact)))))
+#+END_SRC
+
+It exists because Clojure (or rather, the JVM) doesn't support
+tail-call optimisation.  It also allows for 'nested' recursive loops
+inside of a function.
+
+And that's pretty much it.
+
+For is for list comprehension.  At it's most basic, it's just like map:
+
+#+BEGIN_SRC clojure
+(for [x (range 1 10)]
+  (str "-" (* x x) "-"))
+#+END_SRC
+
+or filter:
+
+#+BEGIN_SRC clojure 
+(for [x (range 1 10)
+      :when (even? x)]
+  (str "-" (* x x) "-"))
+#+END_SRC
+
+but it also has early termination:
+
+#+BEGIN_SRC clojure
+(for [x (range 1 10)
+      :while (< x 5)]
+  (str "-" (* x x) "-"))
+#+END_SRC
+
+per-iteration binding:
+
+#+BEGIN_SRC clojure
+(for [x (range 1 10)
+      :let [inverse (/ 1 x)]]
+  (str x " - " inverse))
+#+END_SRC
+
+destructuring:
+
+#+BEGIN_SRC clojure
+(for [[k v] {:a 1, :b 2, :c 3, :d 4}]
+  (str k "-" v))
+#+END_SRC
+
+and of course, all of the above.  I'm just too tired right now to come
+up with a contrived example using all of them.  (I'm to tired to come
+up with a contrived example right now.)
+
+Having more than one (nested) binding allows for cross-joins:
+
+#+BEGIN_SRC clojure
+(for [x [:a :b]
+      y [1 2 3 4]]
+  [x y])
+#+END_SRC
+
+Note that ~for~ will always result in a lazy sequence,so don't use it
+for side-effects - use ~doseq~ instead.
+
+** Stack traces
+Take notes from [[https://cb.codes/how-to-read-and-debug-clojure-stack-traces/][here]] when feeling more awake.
+* Exercises
+** my-nth
+#+BEGIN_SRC clojure
+(defn my-nth [lst n]
+  "Return nth item.  Restricted: nth."
+  (if (zero? n)
+    (first lst)
+    (recur (rest lst) (dec n))))
+#+END_SRC
+
+#+BEGIN_SRC clojure
+(my-nth [1 2 3 4 5 6] 3)                ; 4
+#+END_SRC
+
+** count-seq 
+#+BEGIN_SRC clojure 
+(defn count-seq [seq]
+  "Count items in seq.  Restriction: count."
+  (apply + (map (constantly 1) seq)))
+#+END_SRC
+
+#+BEGIN_SRC clojure
+(count-seq [1 2 3])                     ;3
+#+END_SRC
+
+** reverse-seq
+#+BEGIN_SRC clojure
+(defn reverse-seq [seq]
+  "Reverse seq.  Restriction: reverse, rseq."
+  (into () seq))
+#+END_SRC
+
+** palindrome
+#+BEGIN_SRC clojure
+(defn palindrome [seq]
+  "Determine is seq is a palindrome."
+  (= seq (if (= java.lang.String (type seq))
+           (apply str (reverse seq))
+           (reverse seq))))
+#+END_SRC
+
+The problem I ran into here, is that without using the ~str~ function,
+this would fail when given a string.  A string that's turned into a
+sequence ends up as a series of characters, and the ~reverse~ function
+will do exactly that.  This adds the overhead (and possible bugs) of
+turning everything into a string before running the comparison.  I got
+around this with the type check, but that's less than ideal.  What I
+/should/ have done is this:
+
+#+BEGIN_SRC clojure
+(defn palindrome [sequence]
+  (= (seq sequence) (reverse sequence)))
+#+END_SRC
+
+By coercing ~sequence~ with ~seq~, it ensures that any string gets turned
+into a sequence (which ~reverse~ will also do), and if ~sequence~ already
+/is/ a sequence, it'll just return it untouched.
+
+** my-max
+#+BEGIN_SRC clojure
+(defn my-max [lst]
+  "Returns max value ion lst.  Restriction: max, max-key."
+  (reduce #(if (> %1 %2) %1 %2) lst))
+
+(my-max [3 6 2 14 6 85 3 2])            ; 85
+#+END_SRC
+
+** only-capitals
+#+BEGIN_SRC clojure
+(defn only-capitals [s]
+  "Returns a string containing only the capital letters from s."
+  (apply str (filter #(Character/isUpperCase %1) (seq s))))
+#+END_SRC
+** duplicate
+This one threw me, as I kept on trying to use things like map to
+duplicate each item - ~(map #([% %]...)~ - , but ran into the problem of
+having to flatten each resulting sequence, which totally broke when
+faced with nested sequences.
+
+#+BEGIN_SRC clojure
+(defn duplicate [s]
+  "Duplicates each element in a sequence."
+  (interleave s s))
+#+END_SRC
+** range
