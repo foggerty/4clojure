@@ -208,9 +208,9 @@ Having more than one (nested) binding allows for cross-joins:
 
 Note that ~for~ will always result in a lazy sequence,so don't use it
 for side-effects - use ~doseq~ instead.
-
-** Stack traces
 Take notes from [[https://cb.codes/how-to-read-and-debug-clojure-stack-traces/][here]] when feeling more awake.
+** Java interop
+
 * Exercises
 ** my-nth
 #+BEGIN_SRC clojure
