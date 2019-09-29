@@ -296,3 +296,101 @@ faced with nested sequences.
   (interleave s s))
 #+END_SRC
 ** range
+#+BEGIN_SRC clojure
+(defn my-range [x y]
+  "Return seq of x(inclusive) - y(exclusive)."
+  (take (- y x)
+        (iterate inc x)))
+#+END_SRC
+** DONE compress
+#+BEGIN_SRC clojure
+(defn compress [s]
+  (dedupe s))
+#+END_SRC
+** factorial
+#+BEGIN_SRC clojure
+(defn factorial [x]
+  (apply * (range 1 (inc x))))
+#+END_SRC
+** TODO interleave
+** TODO flatten a sequence
+** replicate a sequence
+#+BEGIN_SRC clojure
+(defn my-replicate [s n]
+  "Replicates each element in s, n times."
+  (mapcat #(repeat n %) s))
+#+END_SRC
+** interpose
+#+BEGIN_SRC clojure
+(defn interpose-seq [i s]
+  "Interpose s with i.
+  Restriction: interpose."
+  (drop-last (flatten (for [x s] [x i]))))
+#+END_SRC
+** TODO pack a sequence
+** drop every nth
+#+BEGIN_SRC clojure
+(defn drop-every-nth [s n]
+  (keep-indexed #(if (not= 0 (mod (inc %1) n)) %2 nil) s))
+#+END_SRC
+** split a sequence
+#+BEGIN_SRC clojure
+(defn split-seq [i, s]
+  [(take i s) (drop i s)])
+#+END_SRC
+** half-truth
+#+BEGIN_SRC clojure
+(defn half-truth [& bools]
+  "True, if some of bools are true, but not all."
+  (and (boolean (some true? bools))
+       (not (every? true? bools))))
+#+END_SRC
+** map construction
+#+BEGIN_SRC clojure
+(defn my-zipmap [keys vals]
+  "Returns a map of keys & values.
+   Restriction: zipmap."
+  (apply assoc {} (interleave keys vals)))
+#+END_SRC
+** greatest common divisor
+#+BEGIN_SRC clojure
+(defn gcd [a b]
+  (if (= 0 b) a
+      (recur b (mod a b))))
+#+END_SRC
+** set intersection 
+#+BEGIN_SRC clojure
+(require '[clojure.set
+          :as s])
+
+(defn my-intersection [s1 s2]
+  "Interseciont of sets s1 and s2.
+   Restriction: intersection."
+  (s/difference (s/union s1 s2)
+                (s/difference s1 s2)
+                (s/difference s2 s1)))
+#+END_SRC
+** comparisons
+Given a less-than operator, determine if two 'things' are :eq, :gt or
+:lt.
+
+#+BEGIN_SRC clojure
+(defn my-comparison [lt a b]
+  (cond (= (lt a b) (lt b a)) :eq
+        (lt a b) :lt
+        :else :gt))
+#+END_SRC
+** TODO iterate
+#+BEGIN_SRC clojure
+(defn my-iterate [f a]
+  "Given function f and 'thing' a, return lazy sequence of a, f(a),
+  f(f(a)) etc."
+  )
+#+END_SRC
+** cartesian product
+#+BEGIN_SRC clojure 
+(defn cartesian [s1 s2]
+  (into #{} (for [a s1, b s2]
+              [a b])))
+#+END_SRC
+** 
