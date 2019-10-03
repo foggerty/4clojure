@@ -273,7 +273,7 @@ into a sequence (which ~reverse~ will also do), and if ~sequence~ already
 #+BEGIN_SRC clojure
 (defn my-max [lst]
   "Returns max value ion lst.  Restriction: max, max-key."
-  (reduce #(if (> %1 %2) %1 %2) lst))
+  (reduce > lst))
 
 (my-max [3 6 2 14 6 85 3 2])            ; 85
 #+END_SRC
@@ -393,4 +393,69 @@ Given a less-than operator, determine if two 'things' are :eq, :gt or
   (into #{} (for [a s1, b s2]
               [a b])))
 #+END_SRC
-** 
+** product digits
+#+BEGIN_SRC clojure 
+(defn product-digits [a b]
+  "Returns a multilied by b, by broken up by digit."
+  (map #(Character/getNumericValue %) (seq (str (* a b)))))
+#+END_SRC
+** TODO group a sequence
+#+BEGIN_SRC clojure
+(defn my-group-by [f, s]
+  "Returns a map, where the keys are generated from applying f to each
+  element, and the values are all elements that generated that key."
+  )
+
+(my-group-by #(> % 5) [1 3 6 8])
+#+END_SRC
+** symetric difference
+#+BEGIN_SRC clojure
+(require '[clojure.set :as s])
+
+(defn symmetric-diff [s1 s2]
+  "Returns all items that appear in one set only."
+  (s/union (s/difference s1 s2)
+           (s/difference s2 s1)))
+#+END_SRC
+** dot-product
+#+BEGIN_SRC clojure
+(defn dot-product [a b]
+  "Computes dot-product of a and b.  A and b are assumed to be equal
+  length.  Note to self, Wikipedia's explanatin can be condensed (for
+  the purposes of this exercise) to: multiply each element from list a
+  with its match in list b, then add all the results together."
+  (apply + (map #(* %1 %2) a b)))
+#+END_SRC
+** read a binary number (from a string)
+#+BEGIN_SRC clojure
+(defn read-binary [s]
+  "Convert binary number represented as a string, into an int."
+  (Integer/valueOf 2 2))
+#+END_SRC
+** TODO infix calculator
+** indexing a sequence
+Note: I cannot use something like ~#([%2 %1])~ for the anonymous
+function, because it will treat the vector literal as a function. 
+
+#+BEGIN_SRC clojure
+(defn index-seq [s]
+  (map-indexed #(vector %2 %1) s))
+#+END_SRC
+** TODO pascal's triangle
+urgh......
+
+#+BEGIN_SRC clojure
+;; For the nth row, will always be: [1 (n-1) ... (n-1) 1].  Even rows
+;; have an even number of items, odd rows an odd number.
+
+(defn pascals-triangle
+  [1] (vector 1)
+  [n] )
+#+END_SRC
+** reimplement map
+#+BEGIN_SRC clojure
+(defn my-map [f s]
+  "Apply f to all elements in s, returning a lazy-seq.
+   Restriction: map, map-indexed, mapcat, for."
+  )
+#+END_SRC
