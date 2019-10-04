@@ -310,7 +310,8 @@ faced with nested sequences.
 ** factorial
 #+BEGIN_SRC clojure
 (defn factorial [x]
-  (apply * (range 1 (inc x))))
+  (apply * (ra
+** nge 1 (inc x))))
 #+END_SRC
 ** TODO interleave
 ** TODO flatten a sequence
@@ -453,9 +454,31 @@ urgh......
   [n] )
 #+END_SRC
 ** reimplement map
+Note to self: Clojure is like scheme, in that I don't need to run a passed in function
+through ~apply~ (or ~funcall,~ in Emacs).
+
 #+BEGIN_SRC clojure
-(defn my-map [f s]
-  "Apply f to all elements in s, returning a lazy-seq.
+(defn my-map [func some-seq]
+  "Apply func to all elements in some-seq, returning a lazy-seq.
    Restriction: map, map-indexed, mapcat, for."
-  )
+  (for [x some-seq]
+    (func x)))
 #+END_SRC
+** tree?
+Pain point: vectors do not impliment ISeq, so ~(seq? [1 2 3])~ returns false.  ~(seq [1 2 3])~
+will return ~(1 2 3)~, but that screws up the ~AND~ clause because I'm expecting booleans, and
+it ends up returning the sequence.  So just ~OR~ together two tests, one for ~seq?~
+and another for ~vector?~, or use the ~sequential?~ function.
+
+#+BEGIN_SRC clojure
+(defn tree? [tree]
+  "True, if tree satisfies the conditions for abinary tree."
+  (and (sequential? tree)
+       (= 3 (count tree))
+       (and (not (nil? (first tree)))
+            (not (seq? (first tree)))
+            (let [left (nth tree 1), right (nth tree 2)]
+              (and (or (nil? left) (tree? left))
+                   (or (nil? right) (tree? right)))))))
+#+END_SRC
+
